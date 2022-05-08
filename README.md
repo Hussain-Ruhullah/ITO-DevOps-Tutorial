@@ -1,9 +1,9 @@
 # ITO-DevOps-Tutorial
 this is a step by step guide on how to host your own gitlab-ce instance with docker
 
-## 0 go to your machine or [Docker-Playground](https://labs.play-with-docker.com/)
+## 0: go to your machine or [Docker-Playground](https://labs.play-with-docker.com/)
 
-## 1 host your own gitlab
+## 1: type the commond below to start the gitlab in a container
 ```
 sudo docker run --detach \
   --hostname gitlab.example.com \
@@ -15,7 +15,7 @@ sudo docker run --detach \
   --volume $GITLAB_HOME/data:/var/opt/gitlab:Z \
   gitlab/gitlab-ce:latest
   ```
-  ## 2: check logs
+  ## 2: check logs to know if the container is running (optional)
   `
   sudo docker logs -f gitlab
   `
