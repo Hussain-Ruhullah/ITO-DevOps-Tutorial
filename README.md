@@ -1,6 +1,6 @@
 # ITO-DevOps-Tutorial
 
-##
+##1
 ```
 sudo docker run --detach \
   --hostname gitlab.example.com \
@@ -13,3 +13,11 @@ sudo docker run --detach \
   --shm-size 256m \
   gitlab/gitlab-ee:latest
   ```
+  ##2: check logs
+  `
+  sudo docker logs -f gitlab
+  `
+  ##3 get root password
+  `
+  sudo docker exec -it gitlab grep 'Password:' /etc/gitlab/initial_root_password
+  `
