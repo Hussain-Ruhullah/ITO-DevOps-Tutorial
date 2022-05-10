@@ -54,3 +54,55 @@ Run the register command :
 - Enter any optional maintenance note for the runner.
 - Provide the runner executor. For most use cases, enter docker.
 - If you entered docker as your executor, you are asked for the default image to be used for projects that do not define one in .gitlab-ci.yml.
+
+
+
+
+version: '3'
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    restart: always
+    hostname: 'gitlab.localhost.com'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.localhost.com'
+    ports:
+      - '80:80'
+      - '443:443'
+      - '44:22'
+    volumes:
+      - '/srv/gitlab/config:/etc/gitlab'
+      - '/srv/gitlab/logs:/var/log/gitlab'
+      - '/srv/gitlab/data:/var/opt/gitlab'
+    networks:
+          - gitlab
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine
+    depends_on:
+      - 'gitlab'
+    restart: always
+    volumes:
+      - '/srv/gitlab-runner/config:/etc/gitlab-runner'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    networks:
+      - gitlab
+
+networks:
+  gitlab:
+
+
+
+ create the runner from command line
+
+docker exec -it gitlab_gitlab-runner_1 gitlab-runner register \
+--non-interactive \
+--url http://gitlab_gitlab_1 \
+--registration-token _wgMgEx3nBocYQtoi83c \
+--executor docker \
+--docker-image alpine:latest \
+--docker-network-mode gitlab_default
+
+
+https://www.czerniga.it/2021/11/14/how-to-install-gitlab-using-docker-compose/
