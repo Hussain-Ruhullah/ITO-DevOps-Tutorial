@@ -1,5 +1,5 @@
 
-### 0: go to your machine or [Docker-Playground](https://labs.play-with-docker.com/)
+### Go to your machine or [Docker-Playground](https://labs.play-with-docker.com/)
 
 # Docker Compose
 ## Configuration for Docker Compose
