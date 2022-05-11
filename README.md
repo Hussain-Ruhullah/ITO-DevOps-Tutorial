@@ -1,50 +1,64 @@
-# ITO-DevOps-Tutorial
-this is a step by step guide on how to host your own gitlab-ce instance with docker
 
-## 0: go to your machine or [Docker-Playground](https://labs.play-with-docker.com/)
+### 0: go to your machine or [Docker-Playground](https://labs.play-with-docker.com/)
 
-## 1: type the commond below to start the gitlab in a container
+# Docker Compose
+## Configuration for Docker Compose
+### GitLab/GitLab-runner
+
+1- Ein dediziertes Verzeichnis erstellen, in dem wir Daten und die Gitlab-Konfiguration speichern werden.
+`mkdir gitlab`
+
+2- Eine Umgebungsvariable setzen, die den Pfad zu dem Verzeichnis von Gitlab enthält:
+`export GITLAB_HOME=$(pwd)/gitlab`
+
+3- Die Datei docker-compose.yml mit folgendem Inhalt erstellen:
+
 ```
-sudo docker run --detach \
-  --hostname gitlab.example.com \
-  --publish 443:443 --publish 80:80 --publish 44:22 \
-  --name gitlab \
-  --restart always \
-  --volume /srv/gitlab/config:/etc/gitlab:Z \
-  --volume /srv/gitlab/logs:/var/log/gitlab:Z \
-  --volume /srv/gitlab/data:/var/opt/gitlab:Z \
-  gitlab/gitlab-ce:latest
-  ```
-  ## 2: check logs to know if the container is running (optional)
-  `
-  sudo docker logs -f gitlab
-  `
-  ## 3 get root password
-  `
-  sudo docker exec -it gitlab grep 'Password:' /etc/gitlab/initial_root_password
-  `
-# UI for Docker
-## create a docker volume
-`
-docker volume create portainer_data
-`
-## start the portainer
-`
-docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce
-`
+# docker-compose.yml
+version: '3.7'
+services:
+  web:
+    image: 'gitlab/gitlab-ce:latest'
+    restart: always
+    hostname: 'localhost'
+    container_name: gitlab-ce
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost'
+    ports:
+      - '8080:80'
+      - '8443:443'
+    volumes:
+      - '$GITLAB_HOME/config:/etc/gitlab'
+      - '$GITLAB_HOME/logs:/var/log/gitlab'
+      - '$GITLAB_HOME/data:/var/opt/gitlab'
+    networks:
+      - gitlab
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine
+    container_name: gitlab-runner    
+    restart: always
+    depends_on:
+      - web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - '$GITLAB_HOME/gitlab-runner:/etc/gitlab-runner'
+    networks:
+      - gitlab
 
-# Gitlab-runner
-`
-docker run -d --name gitlab-runner --restart always \
-  -v /srv/gitlab-runner/config:/etc/gitlab-runner \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  gitlab/gitlab-runner:latest
-`
+networks:
+  gitlab:
+    name: gitlab-network
+    
+```
+4- Gitlab installation
+`docker-compose up -d`
 
+5- Um sich zum ersten Mal bei GitLab anzumelden, benötigt man ein temporäres Passwort, das bei der Installation automatisch generiert wird. Das Passwort wird mit dem Befehl abgefragt:
+`docker exec -it gitlab-ce grep 'Password:' /etc/gitlab/initial_root_password` 
 
-## Register the runner
-Run the register command :
-`docker run --rm -it -v /srv/gitlab-runner/config:/etc/gitlab-runner gitlab/gitlab-runner register
+### GitLab/runner registrieren
+`docker exec -it gitlab-runner gitlab-runner register --url "http://gitlab-ce" --clone-url "http://gitlab-ce"
 `
 - Go to your gitlab instance and select settings > ci cd > runners. 
 - Enter your GitLab instance URL (also known as the gitlab-ci coordinator URL).
@@ -55,54 +69,9 @@ Run the register command :
 - Provide the runner executor. For most use cases, enter docker.
 - If you entered docker as your executor, you are asked for the default image to be used for projects that do not define one in .gitlab-ci.yml.
 
+Nach der ordnungsgemäßen Konfiguration sollten wir die Bestätigung sehen, dass Runner erfolgreich registriert wurde
+### Zusätzlich zur Grundkonfiguration müssen wir den vom Runner gestarteten Containern den Zugriff auf das virtuelle Netzwerk erlauben, in dem GitLab arbeitet. Dazu starten wir den Editor (z. B. vi)
+`sudo vi gitlab/gitlab-runner/config.toml`
 
 
-
-version: '3'
-services:
-  gitlab:
-    image: 'gitlab/gitlab-ce:latest'
-    restart: always
-    hostname: 'gitlab.localhost.com'
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://gitlab.localhost.com'
-    ports:
-      - '80:80'
-      - '443:443'
-      - '44:22'
-    volumes:
-      - '/srv/gitlab/config:/etc/gitlab'
-      - '/srv/gitlab/logs:/var/log/gitlab'
-      - '/srv/gitlab/data:/var/opt/gitlab'
-    networks:
-          - gitlab
-
-  gitlab-runner:
-    image: gitlab/gitlab-runner:alpine
-    depends_on:
-      - 'gitlab'
-    restart: always
-    volumes:
-      - '/srv/gitlab-runner/config:/etc/gitlab-runner'
-      - '/var/run/docker.sock:/var/run/docker.sock'
-    networks:
-      - gitlab
-
-networks:
-  gitlab:
-
-
-
- create the runner from command line
-
-docker exec -it gitlab_gitlab-runner_1 gitlab-runner register \
---non-interactive \
---url http://gitlab_gitlab_1 \
---registration-token _wgMgEx3nBocYQtoi83c \
---executor docker \
---docker-image alpine:latest \
---docker-network-mode gitlab_default
-
-
-https://www.czerniga.it/2021/11/14/how-to-install-gitlab-using-docker-compose/
+Dann fügen wir eine neue Zeile am Ende der Runner-Konfiguration hinzu: network_mode=“gitlab-network”
