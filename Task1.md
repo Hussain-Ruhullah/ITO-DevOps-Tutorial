@@ -14,7 +14,7 @@ then type:
 
 and define a dockerfile as shown below:
 
-`
+```
  FROM nginx:latest
 
  COPY index.html /usr/share/nginx/html
@@ -22,7 +22,7 @@ and define a dockerfile as shown below:
  EXPOSE 80     
 
  CMD ["nginx", "-g", "daemon off;"]
- `
+ ```
  
 build your image:
 
