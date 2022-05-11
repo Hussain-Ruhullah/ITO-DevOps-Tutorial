@@ -13,6 +13,7 @@ then type:
 `vi Dockerfile`
 
 and define a dockerfile as shown below:
+
 `
  FROM nginx:latest
 
@@ -22,7 +23,9 @@ and define a dockerfile as shown below:
 
  CMD ["nginx", "-g", "daemon off;"]
  `
+ 
 build your image:
+
 `docker build . -t <image-name>`
 
 run your new image 
